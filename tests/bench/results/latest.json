@@ -1,0 +1,83 @@
+{
+ "base": "https://rag.parswanadh.dev",
+ "at": "2026-09-29T15:03:04.927Z",
+ "passed": 14,
+ "total": 15,
+ "results": [
+  {
+   "name": "login shape",
+   "pass": true,
+   "detail": "ws=Mobile"
+  },
+  {
+   "name": "login rejects bad password",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "models list",
+   "pass": true,
+   "detail": "mimo-v2.6-flash"
+  },
+  {
+   "name": "upload 201 queued",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "ingest reaches indexed",
+   "pass": true,
+   "detail": "indexed"
+  },
+  {
+   "name": "file bytes",
+   "pass": true,
+   "detail": "63B text/plain; charset=utf-8"
+  },
+  {
+   "name": "toc shape",
+   "pass": true,
+   "detail": "1 entries"
+  },
+  {
+   "name": "in-doc search scoped",
+   "pass": true,
+   "detail": "1 hits"
+  },
+  {
+   "name": "golden: When do carry-over days expire?",
+   "pass": true,
+   "detail": "ttft=7678ms total=22981ms srv=7249/22476"
+  },
+  {
+   "name": "golden: Who first catalogued the Zephyrian moss-",
+   "pass": true,
+   "detail": "ttft=45117ms total=54351ms srv=43517/52332"
+  },
+  {
+   "name": "golden: Do we need manager approval for a 5-day ",
+   "pass": true,
+   "detail": "ttft=7043ms total=68482ms srv=5324/66794"
+  },
+  {
+   "name": "golden: What is the reimbursement limit for clie",
+   "pass": true,
+   "detail": "ttft=31563ms total=49365ms srv=30216/48028"
+  },
+  {
+   "name": "laya blocks injection",
+   "pass": false,
+   "detail": "The provided document chunks don't contain an answer to that question — they cover I2C/SPI/PWM/RTC t"
+  },
+  {
+   "name": "delete 202 scheduled",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "keyless 401s",
+   "pass": true,
+   "detail": ""
+  }
+ ]
+}

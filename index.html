@@ -9,7 +9,7 @@
 </head>
 <body>
 <header class="top">
-  <div class="brand">Rag Client <span class="stage">v0 · stage 0</span></div>
+  <div class="brand">Rag Client <span class="stage">v0 · full surface</span></div>
   <div class="tier" id="tier">detecting compute…</div>
 </header>
 <main>
@@ -20,14 +20,47 @@
     <button id="loginBtn">Sign in</button>
     <p class="hint">API-fallback path. Local tiers unlock as stages land.</p>
   </section>
-  <section id="chatPane" class="hidden">
-    <div id="thread"></div>
-  </section>
+  <div id="app" class="hidden">
+    <div id="tabs">
+      <button data-tab="chat" class="on">Chat</button>
+      <button data-tab="lib">Library</button>
+    </div>
+    <label class="guardrow"><input id="layaToggle" type="checkbox" /> 🛡 Laya guard</label>
+    <section id="pane-chat">
+      <div id="thread"></div>
+    </section>
+    <section id="pane-lib" class="hidden">
+      <div class="card">
+        <div class="row"><input id="file" type="file" accept=".txt,.md,.pdf,.docx,.pptx" /><button id="upBtn">Upload</button></div>
+        <p class="hint" id="upMsg">Max 25 MB from mobile. Books stay on your laptop.</p>
+      </div>
+      <h2>Library <span id="docCount" class="hint"></span></h2>
+      <div id="docList"></div>
+    </section>
+  </div>
 </main>
 <footer class="composer hidden" id="composer">
   <textarea id="q" rows="1" placeholder="Ask grounded…"></textarea>
   <button id="ask">↑</button>
 </footer>
+<div id="viewer" class="overlay hidden">
+  <div class="sheet wide">
+    <div class="vhead">
+      <strong id="viewerTitle">Source</strong>
+      <span id="viewerPage"></span>
+      <button id="viewerClose">✕</button>
+    </div>
+    <div class="vtools">
+      <button id="viewerTocBtn">Contents</button>
+      <input id="viewerSearch" type="text" placeholder="Search in book…" />
+      <button id="viewerSearchGo">🔍</button>
+    </div>
+    <div id="viewerToc" class="hidden"></div>
+    <div id="viewerResults"></div>
+    <p id="viewerStatus" class="hint"></p>
+    <iframe id="viewerFrame" title="source"></iframe>
+  </div>
+</div>
 <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

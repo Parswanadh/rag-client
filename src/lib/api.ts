@@ -23,22 +23,51 @@ export async function login(id: string, password: string): Promise<{ workspace: 
 
 export interface DoneMsg {
   answer: string;
-  citations: { marker: number; document_id: string; page: number | null }[];
+  citations: { marker: number; document_id: string; page: number | null; section?: string | null }[];
   no_answer: boolean;
   grounding: string;
   conversation_id: string;
   timings?: { ttft_ms: number; total_ms: number };
+  usage?: { prompt_tokens: number; completion_tokens: number } | null;
+}
+
+export interface Doc {
+  id: string;
+  filename: string;
+  mime: string;
+  size_bytes: number;
+  page_count: number | null;
+  version: number;
+  status: string;
+  error: string | null;
+  created_at: string;
+}
+
+export interface TocEntry {
+  section: string | null;
+  page: number;
+}
+
+export interface SearchHit {
+  document_id: string;
+  page: number;
+  chunk_index: number;
+  text: string;
+  score: number;
+  section: string | null;
+  version: number;
 }
 
 export async function streamChat(
   question: string,
   conversationId: string | null,
   onDelta: (text: string) => void,
+  laya = false,
 ): Promise<DoneMsg> {
   const r = await fetch(`${API}/external/v1/chat/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${getKey()}` },
-    body: JSON.stringify({ question, conversation_id: conversationId }),
+    body: JSON.stringify({ question, conversation_id: conversationId, laya: laya || undefined }),
   });
   if (r.status === 401) throw new Error("signed out — sign in again");
   if (!r.ok || !r.body) throw new Error(`HTTP ${r.status}`);
@@ -63,4 +92,58 @@ export async function streamChat(
   }
   if (!done) throw new Error("stream ended early");
   return done;
+}
+
+const keyH = () => ({ Authorization: `Bearer ${getKey()}` });
+
+export async function getModels(): Promise<{ id: string }[]> {
+  const r = await fetch(`${API}/external/v1/openai/models`, { headers: keyH() });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return (await r.json()).data;
+}
+
+export async function listDocs(): Promise<Doc[]> {
+  const r = await fetch(`${API}/external/v1/documents`, { headers: keyH() });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+export async function uploadDoc(file: File): Promise<Doc> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const r = await fetch(`${API}/external/v1/documents`, { method: "POST", headers: keyH(), body: fd });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+export async function docStatus(id: string): Promise<{ id: string; status: string; error: string | null }> {
+  const r = await fetch(`${API}/external/v1/documents/${id}/status`, { headers: keyH() });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+export async function docFile(id: string): Promise<Blob> {
+  const r = await fetch(`${API}/external/v1/documents/${id}/file`, { headers: keyH() });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.blob();
+}
+
+export async function docToc(id: string): Promise<TocEntry[]> {
+  const r = await fetch(`${API}/external/v1/documents/${id}/toc`, { headers: keyH() });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+export async function docSearch(id: string, q: string, limit = 8): Promise<{ no_answer: boolean; chunks: SearchHit[] }> {
+  const r = await fetch(
+    `${API}/external/v1/documents/${id}/search?q=${encodeURIComponent(q)}&limit=${limit}`,
+    { headers: keyH() },
+  );
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+export async function deleteDoc(id: string): Promise<void> {
+  const r = await fetch(`${API}/external/v1/documents/${id}`, { method: "DELETE", headers: keyH() });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
 }

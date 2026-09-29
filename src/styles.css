@@ -19,3 +19,28 @@ main { flex:1; width:100%; max-width:680px; margin:0 auto; padding:8px 16px 140p
 .composer { position:fixed; left:0; right:0; bottom:0; display:flex; gap:8px; max-width:680px; margin:0 auto; padding:10px 16px calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(transparent, var(--paper) 30%); }
 .composer textarea { flex:1; font-size:16px; border:1px solid var(--line); border-radius:24px; padding:12px 18px; background:var(--card); }
 .composer button { width:48px; height:48px; border-radius:50%; border:0; background:var(--acc); color:#fffdf8; font-size:20px; }
+#tabs { display:flex; gap:8px; margin:8px 0; }
+#tabs button { background:var(--card); border:1px solid var(--line); border-radius:999px; padding:10px 16px; min-height:44px; }
+#tabs button.on { background:var(--ink); color:var(--paper); }
+.guardrow { display:flex; gap:8px; align-items:center; font-size:14px; color:var(--mut); }
+.doc { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin:8px 0; }
+.docmeta { font-size:12.5px; color:var(--mut); }
+.docerr { font-size:12.5px; color:#b3261e; }
+.pill { font-size:11.5px; border-radius:999px; padding:2px 9px; margin-left:6px; }
+.pill.ready { background:#e3f2e8; color:#2f7d4f; }
+.pill.failed { background:#fbe4e1; color:#b3261e; }
+.pill.working { background:#faf3e3; color:#7a5b16; }
+.row { display:flex; gap:8px; margin-top:8px; }
+.row button { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:8px 14px; min-height:44px; }
+.overlay { position:fixed; inset:0; z-index:50; background:rgba(31,30,29,.45); display:flex; align-items:center; justify-content:center; padding:12px; }
+.sheet { background:var(--card); border-radius:18px; padding:16px; width:min(94vw,720px); max-height:92dvh; display:flex; flex-direction:column; }
+.sheet.wide { height:92dvh; }
+.vhead { display:flex; gap:8px; align-items:center; }
+.vhead strong { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vtools { display:flex; gap:6px; margin:8px 0; }
+.vtools input { flex:1; padding:10px; font-size:15px; border:1px solid var(--line); border-radius:10px; }
+.vtools button { border:1px solid var(--line); background:var(--card); border-radius:10px; padding:8px 12px; min-height:44px; }
+#viewerToc, #viewerResults { overflow-y:auto; max-height:180px; }
+.tocrow, .vres { display:block; width:100%; text-align:left; background:none; border:0; border-top:1px solid var(--line); padding:10px 4px; font-size:14px; min-height:44px; }
+.vres span { color:var(--mut); font-size:12.5px; }
+#viewerFrame { flex:1; border:1px solid var(--line); border-radius:10px; background:#fff; min-height:200px; }
