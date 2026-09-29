@@ -73,6 +73,46 @@ export function buildIndex(texts: string[]): Bm25Index {
   return { docs, df, avgLen: total / Math.max(1, docs.length) };
 }
 
+/** Cached per-corpus index: build ONCE at ingest, never per query.
+ * Precomputes per-doc term frequencies and per-term IDF. */
+export class CachedIndex {
+  private tf: Map<number, Map<string, number>> = new Map();
+  private idf: Map<string, number> = new Map();
+  private lens: number[] = [];
+  readonly avgLen: number;
+  readonly size: number;
+  constructor(texts: string[]) {
+    const docs = texts.map(tokenize);
+    const df = new Map<string, number>();
+    let total = 0;
+    docs.forEach((d, i) => {
+      total += d.length;
+      this.lens[i] = d.length;
+      const m = new Map<string, number>();
+      for (const t of d) m.set(t, (m.get(t) ?? 0) + 1);
+      this.tf.set(i, m);
+      for (const t of m.keys()) df.set(t, (df.get(t) ?? 0) + 1);
+    });
+    this.size = docs.length;
+    this.avgLen = total / Math.max(1, docs.length);
+    for (const [t, n] of df) this.idf.set(t, Math.log(1 + (this.size - n + 0.5) / (n + 0.5)));
+  }
+  score(query: string, k1 = 1.5, b = 0.75): number[] {
+    const out = new Array<number>(this.size).fill(0);
+    for (const t of tokenize(query)) {
+      const idf = this.idf.get(t);
+      if (idf === undefined) continue;
+      for (let i = 0; i < this.size; i++) {
+        const f = this.tf.get(i)?.get(t) ?? 0;
+        if (!f) continue;
+        const len = this.lens[i];
+        out[i] += idf * ((f * (k1 + 1)) / (f + k1 * (1 - b + (b * len) / this.avgLen)));
+      }
+    }
+    return out;
+  }
+}
+
 export function score(index: Bm25Index, query: string, k1 = 1.5, b = 0.75): number[] {
   const N = index.docs.length;
   const qtf = new Map<string, number>();

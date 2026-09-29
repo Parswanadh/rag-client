@@ -19,7 +19,12 @@ let conv: string | null = null;
 const docsById = new Map<string, Doc>();
 
 const esc = (s: string) =>
-  String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] ?? c);
+  String(s ?? "").replace(/[&<>"'/]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;", "/": "&#x2F;" })[c] ?? c);
+const num = (v: unknown, fallback: number): number => {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : fallback;
+};
+const str = (v: unknown): string => (typeof v === "string" ? v : "");
 const layaOn = () => (document.getElementById("layaToggle") as HTMLInputElement)?.checked ?? false;
 
 async function init() {
@@ -33,12 +38,13 @@ async function init() {
     showChat();
     void modelBadge();
   }
-  ($("loginBtn") as HTMLButtonElement).onclick = async () => {
-    const id = ($("uid") as HTMLInputElement).value.trim();
+  ($("loginBtn") as HTMLButtonElement).onclick = async () => {    const id = ($("uid") as HTMLInputElement).value.trim();
     const pw = ($("pw") as HTMLInputElement).value;
     if (!id || !pw) return;
     try {
       await login(id, pw);
+      ($("uid") as HTMLInputElement).value = "";
+      ($("pw") as HTMLInputElement).value = "";
       showChat();
       void modelBadge();
     } catch (e) {
@@ -46,6 +52,7 @@ async function init() {
     }
   };
   ($("ask") as HTMLButtonElement).onclick = () => void ask();
+  ($("signOut") as HTMLButtonElement).onclick = signOut;
   ($("q") as HTMLTextAreaElement).onkeydown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -77,7 +84,17 @@ async function init() {
 function showChat() {
   $("loginPane").classList.add("hidden");
   $("app").classList.remove("hidden");
+  $("signOut").classList.remove("hidden");
   showTab("chat");
+}
+
+function signOut() {
+  sessionStorage.removeItem("rz_key");
+  conv = null;
+  $("app").classList.add("hidden");
+  $("signOut").classList.add("hidden");
+  $("loginPane").classList.remove("hidden");
+  ($("thread") as HTMLElement).innerHTML = "";
 }
 
 function showTab(name: string) {
@@ -216,6 +233,8 @@ let viewerDoc = "";
 let tocCache = new Map<string, { section: string | null; page: number }[]>();
 
 async function openViewer(docId: string, page: number) {
+  if (typeof docId !== "string" || !docId) return;
+  const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
   viewerDoc = docId;
   tocCache.delete(docId);
   ($("viewer") as HTMLElement).classList.remove("hidden");
@@ -226,8 +245,17 @@ async function openViewer(docId: string, page: number) {
     if (viewerUrl) URL.revokeObjectURL(viewerUrl);
     viewerUrl = URL.createObjectURL(blob);
     const isPdf = (blob.type || "").includes("pdf");
-    ($("viewerFrame") as HTMLIFrameElement).src = isPdf ? `${viewerUrl}#page=${page}` : viewerUrl;
-    ($("viewerPage") as HTMLElement).textContent = `p. ${page}`;
+    if (!isPdf) {
+      // Never render untrusted non-PDF bytes in-origin: force download.
+      const a = document.createElement("a");
+      a.href = viewerUrl;
+      a.download = docsById.get(docId)?.filename ?? "download";
+      a.click();
+      ($("viewerStatus") as HTMLElement).textContent = "Download started (preview supports PDF).";
+      return;
+    }
+    ($("viewerFrame") as HTMLIFrameElement).src = `${viewerUrl}#page=${safePage}`;
+    ($("viewerPage") as HTMLElement).textContent = `p. ${safePage}`;
     ($("viewerStatus") as HTMLElement).textContent = "";
   } catch (e) {
     ($("viewerStatus") as HTMLElement).textContent = `Couldn't load: ${(e as Error).message}`;
@@ -267,9 +295,10 @@ async function toggleToc() {
   panel.querySelectorAll<HTMLButtonElement>(".tocrow").forEach((b) => {
     b.onclick = () => {
       const t = entries[Number(b.dataset.i)];
-      if (t) {
-        ($("viewerFrame") as HTMLIFrameElement).src = `${viewerUrl}#page=${t.page}`;
-        ($("viewerPage") as HTMLElement).textContent = `p. ${t.page}`;
+      const p = t && Number.isFinite(t.page) && t.page > 0 ? Math.floor(t.page) : null;
+      if (p !== null) {
+        ($("viewerFrame") as HTMLIFrameElement).src = `${viewerUrl}#page=${p}`;
+        ($("viewerPage") as HTMLElement).textContent = `p. ${p}`;
       }
     };
   });
@@ -294,9 +323,10 @@ async function viewerSearch() {
     box.querySelectorAll<HTMLButtonElement>(".vres").forEach((b) => {
       b.onclick = () => {
         const c = r.chunks[Number(b.dataset.i)];
-        if (c) {
-          ($("viewerFrame") as HTMLIFrameElement).src = `${viewerUrl}#page=${c.page}`;
-          ($("viewerPage") as HTMLElement).textContent = `p. ${c.page}`;
+        const p = c && Number.isFinite(c.page) && (c.page as number) > 0 ? Math.floor(c.page as number) : null;
+        if (p !== null) {
+          ($("viewerFrame") as HTMLIFrameElement).src = `${viewerUrl}#page=${p}`;
+          ($("viewerPage") as HTMLElement).textContent = `p. ${p}`;
         }
       };
     });

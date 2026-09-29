@@ -11,6 +11,7 @@
 <header class="top">
   <div class="brand">Rag Client <span class="stage">v0 · full surface</span></div>
   <div class="tier" id="tier">detecting compute…</div>
+  <button id="signOut" class="ghostbtn hidden">Sign out</button>
 </header>
 <main>
   <section id="loginPane" class="card">
@@ -58,7 +59,7 @@
     <div id="viewerToc" class="hidden"></div>
     <div id="viewerResults"></div>
     <p id="viewerStatus" class="hint"></p>
-    <iframe id="viewerFrame" title="source"></iframe>
+    <iframe id="viewerFrame" title="source" sandbox="allow-same-origin"></iframe>
   </div>
 </div>
 <script type="module" src="/src/main.ts"></script>

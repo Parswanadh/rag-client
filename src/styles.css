@@ -5,6 +5,7 @@ body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.55 syste
 .brand { font-family:Georgia,serif; font-size:20px; flex:1; }
 .stage { font-size:11px; color:var(--mut); font-family:system-ui; }
 .tier { font-size:12px; border:1px solid var(--line); background:var(--card); border-radius:999px; padding:3px 10px; }
+.ghostbtn { background:var(--card); border:1px solid var(--line); border-radius:999px; padding:8px 14px; min-height:40px; }
 main { flex:1; width:100%; max-width:680px; margin:0 auto; padding:8px 16px 140px; }
 .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; margin:16px 0; }
 .card input { width:100%; padding:12px; font-size:16px; border:1px solid var(--line); border-radius:10px; margin-top:8px; }
