@@ -7,12 +7,17 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
     "preview": "vite preview",
     "deploy": "npm run build && wrangler deploy"
   },
   "devDependencies": {
     "typescript": "^5.9.2",
     "vite": "^7.1.4",
+    "vitest": "^4.1.11",
     "wrangler": "^4.136.3"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.3.0"
   }
 }
