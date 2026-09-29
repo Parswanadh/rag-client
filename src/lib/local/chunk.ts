@@ -49,15 +49,24 @@ export interface Block {
   text: string;
 }
 
-/** Split one page's text; headings start/trim the section trail. */
-export function chunkPage(text: string, trail: readonly (string | null)[]): Block[] {
+/** Split one page's text; headings start/trim the section trail. Returns
+ * blocks plus the outgoing trail so heading-only pages still carry context. */
+export function chunkPage(
+  text: string,
+  trail: readonly (string | null)[],
+): { blocks: Block[]; trail: (string | null)[] } {
   const out: Block[] = [];
   let buf = "";
   let cur: (string | null)[] = [...trail];
   const sectionOf = (): string | null => cur.filter(Boolean).join(" > ") || null;
   const flush = (): void => {
-    if (buf.trim()) out.push({ section: sectionOf(), text: buf.trim() });
-    buf = "";
+    if (buf.trim()) {
+      const overlap = tailWords(buf, OVERLAP);
+      out.push({ section: sectionOf(), text: buf.trim() });
+      buf = overlap;
+    } else {
+      buf = "";
+    }
   };
   for (const para of splitParagraphs(text)) {
     const h = parseHeading(para);
@@ -73,28 +82,35 @@ export function chunkPage(text: string, trail: readonly (string | null)[]): Bloc
         buf = candidate;
         rest = "";
       } else if (!buf.trim()) {
-        // Single over-long paragraph: emit word-boundary slices until the
-        // remainder fits, then carry it. Overlap across mid-para splits is
-        // intentionally skipped; normal paragraph flow still carries
-        // OVERLAP tails (see flush branch below).
+        // Single over-long paragraph: emit word-boundary slices, each
+        // carrying an OVERLAP tail into the next so no sentence is split
+        // across chunks without shared context.
         let tail = rest;
-        while (tail.length > SIZE) {
-          const [head, next] = hardSlice(tail, SIZE);
+        let carry = "";
+        for (;;) {
+          const combined = carry + tail;
+          if (combined.length <= SIZE) {
+            buf = combined;
+            break;
+          }
+          const [head, next] = hardSlice(combined, SIZE);
           out.push({ section: sectionOf(), text: head.trim() });
+          if (!next) {
+            buf = tailWords(head, OVERLAP);
+            break;
+          }
+          carry = tailWords(head, OVERLAP);
           tail = next;
-          if (!tail) break;
         }
-        buf = tail;
         rest = "";
         break;
       } else {
         flush();
-        buf = tailWords(buf, OVERLAP);
       }
     }
   }
   flush();
-  return out;
+  return { blocks: out, trail: cur };
 }
 
 export async function chunkDocument(
@@ -105,8 +121,9 @@ export async function chunkDocument(
   const chunks: Chunk[] = [];
   let trail: (string | null)[] = [];
   for (const p of pages) {
-    for (const b of chunkPage(p.text, trail)) {
-      trail = b.section ? b.section.split(" > ") : [];
+    const { blocks, trail: next } = chunkPage(p.text, trail);
+    trail = next;
+    for (const b of blocks) {
       const text = b.text;
       chunks.push({
         id: `${docId}:${p.page ?? "np"}:${chunks.length}`,
@@ -114,7 +131,7 @@ export async function chunkDocument(
         page: p.page,
         section: b.section,
         text,
-        hash: await sha256Hex(`${text}`),
+        hash: await sha256Hex(`${docId}|${p.page ?? "np"}|${text}`),
         version,
       });
     }

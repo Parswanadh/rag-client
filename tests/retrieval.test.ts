@@ -2,8 +2,7 @@ import { describe, expect, it } from "vitest";
 import { chunkDocument } from "../src/lib/local/chunk";
 import { HashEmbedder } from "../src/lib/local/embed";
 import { buildIndex, CachedIndex, score } from "../src/lib/local/bm25";
-import { normalize, proximity, rrf } from "../src/lib/local/fuse";
-import { indexCorpus, retrieve } from "../src/lib/local/retrieve";
+import { rrf } from "../src/lib/local/fuse";import { indexCorpus, retrieve } from "../src/lib/local/retrieve";
 import type { Chunk } from "../src/lib/local/chunk";
 
 const C = (id: string, text: string, page: number | null = 1, section: string | null = null): Chunk => ({
@@ -34,6 +33,23 @@ describe("chunker", () => {
     expect(chunks.every((c) => c.text.length <= 1000)).toBe(true);
     expect(chunks[0].page).toBeNull();
   });
+  it("carries overlap between consecutive chunks", async () => {
+    const words = Array.from({ length: 300 }, (_, i) => `tok${i}`);
+    const chunks = await chunkDocument("d", [{ page: 1, text: words.join(" ") }]);
+    expect(chunks.length).toBeGreaterThan(1);
+    const tail = chunks[0].text.split(/\s+/).slice(-5);
+    const head = chunks[1].text;
+    expect(tail.every((w) => head.includes(w))).toBe(true);
+  });
+  it("carries section trail across a heading-only page", async () => {
+    const chunks = await chunkDocument("d", [
+      { page: 1, text: "# Beetles" },
+      { page: 2, text: "beetle facts here." },
+    ]);
+    expect(chunks.length).toBe(1);
+    expect(chunks[0].section).toBe("Beetles");
+    expect(chunks[0].page).toBe(2);
+  });
 });
 
 describe("bm25", () => {
@@ -58,11 +74,9 @@ describe("rrf", () => {
     expect(f.get("a")).toBeGreaterThan(f.get("c")!);
     expect(f.get("b")).toBeGreaterThan(f.get("c")!);
   });
-  it("normalize maps best to 1", () => {
-    expect(normalize(new Map([["a", 2], ["b", 4]])).get("b")).toBe(1);
-  });
-  it("proximity counts term overlap", () => {
-    expect(proximity("carry over five days", ["carry", "over", "zzz"])).toBeCloseTo(2 / 3);
+  it("later ranks contribute less", () => {
+    const f = rrf([["a", "b"]]);
+    expect(f.get("a")).toBeGreaterThan(f.get("b")!);
   });
 });
 

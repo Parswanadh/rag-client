@@ -91,9 +91,10 @@ function showChat() {
 function signOut() {
   sessionStorage.removeItem("rz_key");
   conv = null;
-  $("app").classList.add("hidden");
-  $("signOut").classList.add("hidden");
-  $("loginPane").classList.remove("hidden");
+  closeViewer();
+  ($("app") as HTMLElement).classList.add("hidden");
+  ($("signOut") as HTMLElement).classList.add("hidden");
+  ($("loginPane") as HTMLElement).classList.remove("hidden");
   ($("thread") as HTMLElement).innerHTML = "";
 }
 
@@ -139,10 +140,13 @@ async function ask() {
     const total = ((performance.now() - t0) / 1000).toFixed(1);
     const tt = done.timings ? (done.timings.ttft_ms / 1000).toFixed(1) : "?";
     const cites = (done.citations ?? [])
-      .map(
-        (c) =>
-          `<button class="cite" data-doc="${esc(c.document_id)}" data-page="${c.page ?? 1}">[${c.marker}] p.${c.page ?? "?"} · ${esc(c.document_id.slice(0, 8))}</button>`,
-      )
+      .map((c) => {
+        const marker = num(c.marker, 0);
+        const page = c.page === null ? null : num(c.page, 1);
+        const docId = str(c.document_id);
+        if (!docId) return "";
+        return `<button class="cite" data-doc="${esc(docId)}" data-page="${page ?? 1}">[${marker}] p.${page ?? "?"} · ${esc(docId.slice(0, 8))}</button>`;
+      })
       .join("");
     mine.innerHTML =
       `<p>${esc(done.answer)}</p>` +
@@ -172,12 +176,16 @@ async function loadDocs() {
     $("docCount").textContent = docs.length ? `· ${ready}/${docs.length} searchable` : "";
     box.innerHTML = docs.length ? "" : "<p class='hint'>No books yet.</p>";
     for (const d of docs) {
+      if (typeof d.id !== "string" || !d.id) continue;
       const pill = d.status === "failed" ? "failed" : ["indexed", "ready"].includes(d.status) ? "ready" : "working";
+      const pages = num(d.page_count, 0);
+      const ver = num(d.version, 0);
+      const size = num(d.size_bytes, 0);
       box.insertAdjacentHTML(
         "beforeend",
-        `<div class="doc" data-id="${d.id}"><b>${esc(d.filename)}</b> ` +
+        `<div class="doc" data-id="${esc(d.id)}"><b>${esc(d.filename)}</b> ` +
           `<span class="pill ${pill}">${esc(d.status)}</span>` +
-          `<div class="docmeta">${d.page_count ? `${d.page_count} pages · ` : ""}${fmtSize(d.size_bytes)} · v${d.version}</div>` +
+          `<div class="docmeta">${pages ? `${pages} pages · ` : ""}${fmtSize(size)} · v${ver}</div>` +
           (d.error ? `<div class="docerr">${esc(d.error)}</div>` : "") +
           `<div class="row"><button data-act="read">📖 Read</button>` +
           `<button data-act="del" class="ghost">Delete</button></div></div>`,

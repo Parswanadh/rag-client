@@ -96,6 +96,11 @@ export async function streamChat(
 
 const keyH = () => ({ Authorization: `Bearer ${getKey()}` });
 
+const enc = (id: string): string => {
+  if (typeof id !== "string" || !id) throw new Error("bad document id");
+  return encodeURIComponent(id);
+};
+
 export async function getModels(): Promise<{ id: string }[]> {
   const r = await fetch(`${API}/external/v1/openai/models`, { headers: keyH() });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -117,26 +122,27 @@ export async function uploadDoc(file: File): Promise<Doc> {
 }
 
 export async function docStatus(id: string): Promise<{ id: string; status: string; error: string | null }> {
-  const r = await fetch(`${API}/external/v1/documents/${id}/status`, { headers: keyH() });
+  const r = await fetch(`${API}/external/v1/documents/${enc(id)}/status`, { headers: keyH() });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
 }
 
 export async function docFile(id: string): Promise<Blob> {
-  const r = await fetch(`${API}/external/v1/documents/${id}/file`, { headers: keyH() });
+  const r = await fetch(`${API}/external/v1/documents/${enc(id)}/file`, { headers: keyH() });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.blob();
 }
 
 export async function docToc(id: string): Promise<TocEntry[]> {
-  const r = await fetch(`${API}/external/v1/documents/${id}/toc`, { headers: keyH() });
+  const r = await fetch(`${API}/external/v1/documents/${enc(id)}/toc`, { headers: keyH() });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
 }
 
 export async function docSearch(id: string, q: string, limit = 8): Promise<{ no_answer: boolean; chunks: SearchHit[] }> {
+  const n = Math.min(20, Math.max(1, Math.floor(limit) || 8));
   const r = await fetch(
-    `${API}/external/v1/documents/${id}/search?q=${encodeURIComponent(q)}&limit=${limit}`,
+    `${API}/external/v1/documents/${enc(id)}/search?q=${encodeURIComponent(q)}&limit=${n}`,
     { headers: keyH() },
   );
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -144,6 +150,6 @@ export async function docSearch(id: string, q: string, limit = 8): Promise<{ no_
 }
 
 export async function deleteDoc(id: string): Promise<void> {
-  const r = await fetch(`${API}/external/v1/documents/${id}`, { method: "DELETE", headers: keyH() });
+  const r = await fetch(`${API}/external/v1/documents/${enc(id)}`, { method: "DELETE", headers: keyH() });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
 }
