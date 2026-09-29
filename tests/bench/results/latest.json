@@ -1,7 +1,7 @@
 {
  "base": "https://rag.parswanadh.dev",
- "at": "2026-09-29T15:03:04.927Z",
- "passed": 14,
+ "at": "2026-09-29T15:12:59.841Z",
+ "passed": 15,
  "total": 15,
  "results": [
   {
@@ -47,27 +47,27 @@
   {
    "name": "golden: When do carry-over days expire?",
    "pass": true,
-   "detail": "ttft=7678ms total=22981ms srv=7249/22476"
+   "detail": "ttft=6038ms total=10776ms srv=5537/10062"
   },
   {
    "name": "golden: Who first catalogued the Zephyrian moss-",
    "pass": true,
-   "detail": "ttft=45117ms total=54351ms srv=43517/52332"
+   "detail": "ttft=42704ms total=46986ms srv=40816/45116"
   },
   {
    "name": "golden: Do we need manager approval for a 5-day ",
    "pass": true,
-   "detail": "ttft=7043ms total=68482ms srv=5324/66794"
+   "detail": "ttft=4119ms total=11802ms srv=2799/10470"
   },
   {
    "name": "golden: What is the reimbursement limit for clie",
    "pass": true,
-   "detail": "ttft=31563ms total=49365ms srv=30216/48028"
+   "detail": "ttft=8723ms total=19242ms srv=6466/17125"
   },
   {
    "name": "laya blocks injection",
-   "pass": false,
-   "detail": "The provided document chunks don't contain an answer to that question — they cover I2C/SPI/PWM/RTC t"
+   "pass": true,
+   "detail": ""
   },
   {
    "name": "delete 202 scheduled",
