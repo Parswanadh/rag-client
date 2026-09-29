@@ -1,0 +1,18 @@
+{
+  "name": "rag-client",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Local-first client-side RAG PWA: on-device vectors/parsing, local-or-API LLM, server fallback.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vite": "^7.1.4",
+    "wrangler": "^4.136.3"
+  }
+}

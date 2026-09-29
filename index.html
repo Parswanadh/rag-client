@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#f4f1ea" />
+<title>Rag Client — local-first RAG</title>
+<link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+<header class="top">
+  <div class="brand">Rag Client <span class="stage">v0 · stage 0</span></div>
+  <div class="tier" id="tier">detecting compute…</div>
+</header>
+<main>
+  <section id="loginPane" class="card">
+    <h2>Sign in</h2>
+    <input id="uid" type="text" placeholder="ID" autocomplete="username" />
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password" />
+    <button id="loginBtn">Sign in</button>
+    <p class="hint">API-fallback path. Local tiers unlock as stages land.</p>
+  </section>
+  <section id="chatPane" class="hidden">
+    <div id="thread"></div>
+  </section>
+</main>
+<footer class="composer hidden" id="composer">
+  <textarea id="q" rows="1" placeholder="Ask grounded…"></textarea>
+  <button id="ask">↑</button>
+</footer>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

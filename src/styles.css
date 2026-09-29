@@ -1,0 +1,21 @@
+:root { --paper:#f4f1ea; --card:#fffdf8; --ink:#1f1e1d; --mut:#7a7672; --line:#e4ded1; --acc:#c15f3c; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.55 system-ui,sans-serif; display:flex; flex-direction:column; min-height:100dvh; }
+.top { display:flex; gap:10px; align-items:center; padding:12px 16px; border-bottom:1px solid var(--line); }
+.brand { font-family:Georgia,serif; font-size:20px; flex:1; }
+.stage { font-size:11px; color:var(--mut); font-family:system-ui; }
+.tier { font-size:12px; border:1px solid var(--line); background:var(--card); border-radius:999px; padding:3px 10px; }
+main { flex:1; width:100%; max-width:680px; margin:0 auto; padding:8px 16px 140px; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; margin:16px 0; }
+.card input { width:100%; padding:12px; font-size:16px; border:1px solid var(--line); border-radius:10px; margin-top:8px; }
+.card button { margin-top:10px; background:var(--acc); color:#fffdf8; border:0; border-radius:10px; padding:12px 16px; font-weight:700; min-height:48px; }
+.hint { font-size:12.5px; color:var(--mut); }
+.hidden { display:none !important; }
+.msg-q { text-align:right; margin:18px 0 6px; }
+.msg-q span { display:inline-block; background:#e9e2d2; border-radius:18px 18px 4px 18px; padding:10px 16px; }
+.msg-a { margin:6px 0 18px; }
+.cite { font-size:12.5px; color:var(--mut); border:1px solid var(--line); border-radius:999px; padding:4px 10px; margin-right:6px; }
+.lat { font-size:12px; color:var(--mut); margin-top:6px; }
+.composer { position:fixed; left:0; right:0; bottom:0; display:flex; gap:8px; max-width:680px; margin:0 auto; padding:10px 16px calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(transparent, var(--paper) 30%); }
+.composer textarea { flex:1; font-size:16px; border:1px solid var(--line); border-radius:24px; padding:12px 18px; background:var(--card); }
+.composer button { width:48px; height:48px; border-radius:50%; border:0; background:var(--acc); color:#fffdf8; font-size:20px; }
