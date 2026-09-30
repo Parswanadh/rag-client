@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { chunkDocument } from "../src/lib/local/chunk";
-import { HashEmbedder } from "../src/lib/local/embed";
-import { buildIndex, CachedIndex, score } from "../src/lib/local/bm25";
-import { rrf } from "../src/lib/local/fuse";import { indexCorpus, retrieve } from "../src/lib/local/retrieve";
-import type { Chunk } from "../src/lib/local/chunk";
+import { chunkDocument } from "../src/chunk";
+import { HashEmbedder } from "../src/embed";
+import { buildIndex, CachedIndex, score } from "../src/bm25";
+import { rrf } from "../src/fuse";import { indexCorpus, retrieve } from "../src/retrieve";
+import type { Chunk } from "../src/chunk";
 
 const C = (id: string, text: string, page: number | null = 1, section: string | null = null): Chunk => ({
   id,

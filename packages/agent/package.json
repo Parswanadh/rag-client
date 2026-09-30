@@ -1,0 +1,40 @@
+{
+  "name": "@rag-client/agent",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Reusable local-first RAG core: chunking, embeddings, BM25, RRF fusion, hybrid retrieval, tier detection, and shared contracts (Store, Parser, Generation, TierPolicy, EvalCase).",
+  "exports": {
+    ".": "./src/index.ts",
+    "./bm25": "./src/bm25.ts",
+    "./chunk": "./src/chunk.ts",
+    "./detect": "./src/detect.ts",
+    "./embed": "./src/embed.ts",
+    "./fuse": "./src/fuse.ts",
+    "./generate": "./src/generate.ts",
+    "./parse": "./src/parse.ts",
+    "./retrieve": "./src/retrieve.ts",
+    "./store": "./src/store.ts",
+    "./types": "./src/types.ts",
+    "./package.json": "./package.json"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "eval": "node --import ./eval/register.mjs --experimental-strip-types ./eval/run.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.3.0",
+    "@mlc-ai/web-llm": "^0.2.85",
+    "dexie": "^4.4.6",
+    "jszip": "^3.10.2",
+    "mammoth": "^1.13.0",
+    "pdfjs-dist": "^6.3.289",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.5",
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.11"
+  }
+}

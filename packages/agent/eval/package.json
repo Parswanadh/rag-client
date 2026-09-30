@@ -1,0 +1,9 @@
+{
+  "name": "eval",
+  "private": true,
+  "type": "module",
+  "description": "Task 6 local eval harness: node-run golden cases over a checked-in corpus (kept outside tsc include + npm workspaces, zero new dependencies).",
+  "scripts": {
+    "eval": "node --import ./register.mjs --experimental-strip-types ./run.ts"
+  }
+}

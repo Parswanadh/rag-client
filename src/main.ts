@@ -1,4 +1,15 @@
-import { detectTier } from "./lib/detect";
+import { detectTier } from "@rag-client/agent/detect";
+import type { TierInfo } from "@rag-client/agent/detect";
+import {
+  addLocalDoc,
+  isOnline,
+  outboxBanner,
+  readAskLocal,
+  readLocalDocs,
+  resolveEngineKind,
+  tierBadge,
+  writeAskLocal,
+} from "./lib/local/policy";
 import {
   deleteDoc,
   docFile,
@@ -17,6 +28,14 @@ import {
 const $ = (id: string) => document.getElementById(id)!;
 let conv: string | null = null;
 const docsById = new Map<string, Doc>();
+let tierInfo: TierInfo | null = null;
+const askLocalOn = (): boolean => {
+  try {
+    return (document.getElementById("askLocal") as HTMLInputElement)?.checked ?? readAskLocal();
+  } catch {
+    return readAskLocal();
+  }
+};
 
 const esc = (s: string) =>
   String(s ?? "").replace(/[&<>"'/]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;", "/": "&#x2F;" })[c] ?? c);
@@ -30,7 +49,8 @@ const layaOn = () => (document.getElementById("layaToggle") as HTMLInputElement)
 async function init() {
   try {
     const t = await detectTier();
-    $("tier").textContent = t.tier === "api" ? `API path · ${t.detail}` : `${t.tier} path available · ${t.detail}`;
+    tierInfo = t;
+    $("tier").textContent = tierBadge(t, readAskLocal());
   } catch {
     $("tier").textContent = "API path";
   }
@@ -47,6 +67,7 @@ async function init() {
       ($("pw") as HTMLInputElement).value = "";
       showChat();
       void modelBadge();
+      void refreshTierBadge();
     } catch (e) {
       alert(`Sign-in failed: ${(e as Error).message}`);
     }
@@ -79,11 +100,123 @@ async function init() {
       localStorage.setItem("laya_guard", (e.target as HTMLInputElement).checked ? "1" : "0");
     } catch { /* private mode */ }
   };
+  try {
+    (document.getElementById("askLocal") as HTMLInputElement).checked = readAskLocal();
+  } catch { /* private mode */ }
+  (document.getElementById("askLocal") as HTMLInputElement).onchange = (e) => {
+    writeAskLocal((e.target as HTMLInputElement).checked);
+    void refreshTierBadge();
+    void refreshModelRow();
+  };
+  ($("dlModel") as HTMLButtonElement).onclick = () => void downloadModel();
+  ($("outboxFlush") as HTMLButtonElement).onclick = () => void flushOutboxUi();
+  updateNet();
+  window.addEventListener("online", () => {
+    updateNet();
+    void refreshOutbox();
+  });
+  window.addEventListener("offline", () => {
+    updateNet();
+    void refreshOutbox();
+  });
+  void refreshOutbox();
+  void refreshModelRow();
+}
+
+/** Re-run tier detection (post-login) and repaint the badge. */
+async function refreshTierBadge() {
+  try {
+    tierInfo = await detectTier();
+    $("tier").textContent = tierBadge(tierInfo, askLocalOn());
+  } catch {
+    /* keep last badge */
+  }
+  void refreshModelRow();
+}
+
+/** Offline indicator from navigator.onLine. */
+function updateNet() {
+  const el = document.getElementById("netDot");
+  if (!el) return;
+  const online = isOnline();
+  el.textContent = online ? "online" : "offline";
+  el.classList.toggle("off", !online);
+}
+
+/** Show the model-download row only for the unloaded WebLLM local tier. */
+async function refreshModelRow() {
+  const row = document.getElementById("modelRow");
+  if (!row) return;
+  if (!askLocalOn() || tierInfo?.tier !== "webllm") {
+    row.classList.add("hidden");
+    return;
+  }
+  try {
+    const { isWebLLMLoaded } = await import("./lib/local/pipeline");
+    row.classList.toggle("hidden", isWebLLMLoaded());
+  } catch {
+    row.classList.remove("hidden");
+  }
+}
+
+/** Explicit WebLLM download tap — the ONLY auto-free download path is none:
+ * this handler is the sole trigger, with loader onProgress on the bar. */
+async function downloadModel() {
+  const msg = $("dlMsg") as HTMLElement;
+  const bar = $("dlProg") as HTMLElement;
+  const btn = $("dlModel") as HTMLButtonElement;
+  btn.disabled = true;
+  msg.textContent = "Downloading local model…";
+  try {
+    const { loadWebLLM } = await import("./lib/local/pipeline");
+    await loadWebLLM((p) => {
+      const pct = Math.round(Math.max(0, Math.min(1, p)) * 100);
+      bar.style.width = `${pct}%`;
+      msg.textContent = `Downloading local model… ${pct}%`;
+    });
+    msg.textContent = "Model ready — local answers use WebLLM.";
+    bar.style.width = "100%";
+  } catch (e) {
+    msg.textContent = `Download failed: ${(e as Error).message}`;
+  } finally {
+    btn.disabled = false;
+    void refreshModelRow();
+  }
+}
+
+/** Outbox banner: pending local mutations, flushable on reconnect. */
+async function refreshOutbox() {
+  const bar = document.getElementById("outboxBar");
+  const text = $("outboxText") as HTMLElement;
+  if (!bar) return;
+  let pending = 0;
+  try {
+    const { pendingOps } = await import("./lib/local/pipeline");
+    pending = await pendingOps();
+  } catch {
+    pending = 0;
+  }
+  const copy = outboxBanner(pending, isOnline());
+  bar.classList.toggle("hidden", copy === null);
+  if (copy !== null) text.textContent = copy;
+}
+
+async function flushOutboxUi() {
+  try {
+    const { flushOutbox } = await import("./lib/local/pipeline");
+    const n = await flushOutbox();
+    ($("outboxText") as HTMLElement).textContent = n ? `Flushed ${n} locally.` : "Nothing queued.";
+  } catch (e) {
+    ($("outboxText") as HTMLElement).textContent = `Flush failed: ${(e as Error).message}`;
+  }
+  setTimeout(() => void refreshOutbox(), 1500);
+  void refreshOutbox();
 }
 
 function showChat() {
   $("loginPane").classList.add("hidden");
   $("app").classList.remove("hidden");
+  $("composer").classList.remove("hidden");
   $("signOut").classList.remove("hidden");
   showTab("chat");
 }
@@ -93,6 +226,7 @@ function signOut() {
   conv = null;
   closeViewer();
   ($("app") as HTMLElement).classList.add("hidden");
+  ($("composer") as HTMLElement).classList.add("hidden");
   ($("signOut") as HTMLElement).classList.add("hidden");
   ($("loginPane") as HTMLElement).classList.remove("hidden");
   ($("thread") as HTMLElement).innerHTML = "";
@@ -107,6 +241,7 @@ function showTab(name: string) {
 }
 
 async function modelBadge() {
+  if (askLocalOn()) return; // local badge owns the header while Ask-locally is on
   try {
     const m = await getModels();
     if (m.length) $("tier").textContent = `API path · ${m[0].id}`;
@@ -118,6 +253,10 @@ async function ask() {
   const text = box.value.trim();
   if (!text) return;
   box.value = "";
+  if (askLocalOn()) {
+    await askLocalFlow(text);
+    return;
+  }
   const thread = $("thread");
   thread.insertAdjacentHTML("beforeend", `<div class="msg-q"><span>${esc(text)}</span></div>`);
   const mine = document.createElement("div");
@@ -162,6 +301,40 @@ async function ask() {
   mine.scrollIntoView({ block: "end" });
 }
 
+/** On-device answer path (Ask-locally toggle). Retrieve runs over the
+ * locally-ingested Dexie docs; the engine is Nano when readily available,
+ * the downloaded WebLLM model when present, else the extractive composer.
+ * Live-LLM calls receive formatSources(hits) as context (pipeline). */
+async function askLocalFlow(text: string) {
+  const thread = $("thread");
+  thread.insertAdjacentHTML("beforeend", `<div class="msg-q"><span>${esc(text)}</span></div>`);
+  const mine = document.createElement("div");
+  mine.className = "msg-a";
+  mine.innerHTML = `<span>Thinking locally…</span>`;
+  thread.appendChild(mine);
+  const t0 = performance.now();
+  try {
+    const pipe = await import("./lib/local/pipeline");
+    const kind = tierInfo ? resolveEngineKind(tierInfo, pipe.isWebLLMLoaded()) : "extractive";
+    const r = await pipe.answerWithKind(text, kind, pipe.getWebLLM());
+    const total = ((performance.now() - t0) / 1000).toFixed(1);
+    const sources = r.hits
+      .map((h, i) => {
+        const page = h.chunk.page === null ? "?" : String(h.chunk.page);
+        return `<span class="cite" title="${esc(h.chunk.text.slice(0, 240))}">[${i + 1}] p.${esc(page)} · ${esc(h.chunk.docId.slice(0, 12))}</span>`;
+      })
+      .join("");
+    mine.innerHTML =
+      `<p>${esc(r.answer)}</p>` +
+      (r.noAnswer ? `<p><em>Not grounded — no answer given.</em></p>` : "") +
+      (sources ? `<div>${sources}</div>` : "") +
+      `<div class="lat">📴 ${esc(kind)} · ${total}s on-device</div>`;
+  } catch (e) {
+    mine.innerHTML = `<span>Couldn't answer locally: ${esc((e as Error).message)}</span>`;
+  }
+  mine.scrollIntoView({ block: "end" });
+}
+
 const fmtSize = (b: number) =>
   b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`;
 
@@ -185,6 +358,7 @@ async function loadDocs() {
         "beforeend",
         `<div class="doc" data-id="${esc(d.id)}"><b>${esc(d.filename)}</b> ` +
           `<span class="pill ${pill}">${esc(d.status)}</span>` +
+          `<span class="pill origin">server</span>` +
           `<div class="docmeta">${pages ? `${pages} pages · ` : ""}${fmtSize(size)} · v${ver}</div>` +
           (d.error ? `<div class="docerr">${esc(d.error)}</div>` : "") +
           `<div class="row"><button data-act="read">📖 Read</button>` +
@@ -199,6 +373,63 @@ async function loadDocs() {
   } catch (e) {
     box.innerHTML = `<p class='hint'>Couldn't load: ${esc((e as Error).message)}</p>`;
   }
+  renderLocalDocs(box);
+}
+
+/** Local docs (on-device Dexie store) alongside server docs, badged local. */
+function renderLocalDocs(box: HTMLElement) {
+  const locals = readLocalDocs();
+  if (!locals.length) return;
+  box.insertAdjacentHTML("beforeend", `<h3 class="hint">On this device</h3>`);
+  for (const d of locals) {
+    if (typeof d.id !== "string" || !d.id) continue;
+    const pages = num(d.pages, 0);
+    const size = num(d.size, 0);
+    box.insertAdjacentHTML(
+      "beforeend",
+      `<div class="doc" data-local="${esc(d.id)}"><b>${esc(d.filename)}</b> ` +
+        `<span class="pill local">local</span>` +
+        `<div class="docmeta">${pages ? `${pages} pages · ` : ""}${num(d.chunks, 0)} chunks · ${fmtSize(size)}</div>` +
+        `<div class="docmeta" title="${esc(d.embedNote)}">on-device vectors</div>` +
+        `<div class="localprev hidden"></div>` +
+        `<div class="row"><button data-act="read">📖 Preview</button>` +
+        `<button data-act="del" class="ghost">Delete</button></div></div>`,
+    );
+  }
+  box.querySelectorAll<HTMLDivElement>(".doc[data-local]").forEach((el) => {
+    const id = el.dataset.local ?? "";
+    el.querySelector('[data-act="read"]')!.addEventListener("click", () => void previewLocal(id, el));
+    el.querySelector('[data-act="del"]')!.addEventListener("click", () => void removeLocal(id));
+  });
+}
+
+async function previewLocal(id: string, el: HTMLElement) {
+  const prev = el.querySelector(".localprev") as HTMLElement;
+  prev.classList.toggle("hidden");
+  if (prev.classList.contains("hidden") || prev.dataset.loaded) return;
+  try {
+    const { readLocalChunks } = await import("./lib/local/pipeline");
+    const chunks = await readLocalChunks(id, 3);
+    prev.innerHTML = chunks.length
+      ? chunks.map((c) => `<p class="hint">p.${c.page ?? "?"} · ${esc(c.text.slice(0, 200))}…</p>`).join("")
+      : "<p class='hint'>No text stored.</p>";
+    prev.dataset.loaded = "1";
+  } catch (e) {
+    prev.innerHTML = `<p class='hint'>Preview failed: ${esc((e as Error).message)}</p>`;
+  }
+}
+
+async function removeLocal(id: string) {
+  const d = readLocalDocs().find((x) => x.id === id);
+  if (!confirm(`Delete local copy of '${d?.filename ?? id}'?`)) return;
+  try {
+    const { deleteLocalDoc } = await import("./lib/local/pipeline");
+    await deleteLocalDoc(id, d?.filename ?? id);
+  } catch {
+    /* outbox unavailable — the registry/tombstone delete still applies locally */
+  }
+  void refreshOutbox();
+  void loadDocs();
 }
 
 async function removeDoc(id: string) {
@@ -215,6 +446,10 @@ async function removeDoc(id: string) {
 }
 
 async function upload(file: File) {
+  if (!isOnline()) {
+    await uploadLocal(file);
+    return;
+  }
   if (file.size > 25 * 1024 * 1024) {
     alert("Over the 25 MB mobile cap.");
     return;
@@ -233,6 +468,38 @@ async function upload(file: File) {
     void loadDocs();
   } catch (e) {
     ($("upMsg") as HTMLElement).textContent = `Upload failed: ${(e as Error).message}`;
+  }
+}
+
+/** Offline upload path: agent parse() → chunk → hash embed → Dexie store,
+ * queued in the outbox (server sync is Stage 3). */
+async function uploadLocal(file: File) {
+  if (file.size > 25 * 1024 * 1024) {
+    alert("Over the 25 MB mobile cap.");
+    return;
+  }
+  const msg = $("upMsg") as HTMLElement;
+  msg.textContent = `Parsing ${file.name} on-device…`;
+  try {
+    const { ingestLocalFile, queueLocalOp } = await import("./lib/local/pipeline");
+    const r = await ingestLocalFile(file, file.name);
+    addLocalDoc({
+      id: r.docId,
+      filename: r.filename,
+      size: file.size,
+      pages: r.pages,
+      chunks: r.chunks,
+      origin: "local",
+      embedNote: r.note,
+      addedAt: Date.now(),
+    });
+    await queueLocalOp("put", { kind: "upload", docId: r.docId, filename: r.filename, at: Date.now() });
+    ($("file") as HTMLInputElement).value = "";
+    msg.textContent = `Stored locally: ${r.filename} (${r.chunks} chunks) — syncs in Stage 3.`;
+    void refreshOutbox();
+    void loadDocs();
+  } catch (e) {
+    msg.textContent = `Local ingest failed: ${(e as Error).message}`;
   }
 }
 

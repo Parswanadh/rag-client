@@ -1,12 +1,14 @@
 {
   "name": "rag-client",
   "private": true,
+  "workspaces": ["packages/*"],
   "version": "0.1.0",
   "type": "module",
   "description": "Local-first client-side RAG PWA: on-device vectors/parsing, local-or-API LLM, server fallback.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && npm run guard",
+    "guard": "node scripts/check-no-wasm.mjs",
     "test": "vitest run",
     "preview": "vite preview",
     "deploy": "npm run build && wrangler deploy"
@@ -18,6 +20,7 @@
     "wrangler": "^4.136.3"
   },
   "dependencies": {
-    "@huggingface/transformers": "^4.3.0"
+    "@huggingface/transformers": "^4.3.0",
+    "@rag-client/agent": "workspace:*"
   }
 }
