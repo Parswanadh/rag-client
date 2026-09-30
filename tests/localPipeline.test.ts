@@ -106,7 +106,6 @@ describe("retrieveLocal (Dexie-seeded hybrid, no server)", () => {
 
   it("tombstoned docs are filtered (local delete hides chunks)", async () => {
     const chunks = [C("d1:1:0", "d1", "Employees may carry over leave days.")];
-    const emb = fakeEmbedder();
     const vectors = new Map<string, number[]>(
       chunks.map((c) => [c.id, [0.5, 0.5] as number[]] as [string, number[]]),
     );
