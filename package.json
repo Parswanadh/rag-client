@@ -7,7 +7,8 @@
   "description": "Local-first client-side RAG PWA: on-device vectors/parsing, local-or-API LLM, server fallback.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && npm run guard",
+    "guard": "node scripts/check-no-wasm.mjs",
     "test": "vitest run",
     "preview": "vite preview",
     "deploy": "npm run build && wrangler deploy"
