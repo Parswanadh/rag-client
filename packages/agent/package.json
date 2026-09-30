@@ -19,6 +19,7 @@
   },
   "types": "./src/index.ts",
   "scripts": {
+    "eval": "node --import ./eval/register.mjs --experimental-strip-types ./eval/run.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
