@@ -11,6 +11,7 @@
 <header class="top">
   <div class="brand">Rag Client <span class="stage">v0 · full surface</span></div>
   <div class="tier" id="tier">detecting compute…</div>
+  <div class="net" id="netDot">online</div>
   <button id="signOut" class="ghostbtn hidden">Sign out</button>
 </header>
 <main>
@@ -22,11 +23,18 @@
     <p class="hint">API-fallback path. Local tiers unlock as stages land.</p>
   </section>
   <div id="app" class="hidden">
+    <div id="outboxBar" class="hidden"><span id="outboxText"></span><button id="outboxFlush">Flush</button></div>
     <div id="tabs">
       <button data-tab="chat" class="on">Chat</button>
       <button data-tab="lib">Library</button>
     </div>
     <label class="guardrow"><input id="layaToggle" type="checkbox" /> 🛡 Laya guard</label>
+    <label class="guardrow"><input id="askLocal" type="checkbox" /> 📴 Ask locally (on-device)</label>
+    <div id="modelRow" class="hidden">
+      <button id="dlModel">Download local model</button>
+      <div class="prog"><div id="dlProg"></div></div>
+      <span id="dlMsg" class="hint"></span>
+    </div>
     <section id="pane-chat">
       <div id="thread"></div>
     </section>
