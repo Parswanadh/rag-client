@@ -6,10 +6,8 @@ import {
   outboxBanner,
   readAskLocal,
   readLocalDocs,
-  removeLocalDoc,
   resolveEngineKind,
   tierBadge,
-  tombstoneDoc,
   writeAskLocal,
 } from "./lib/local/policy";
 import {
@@ -424,15 +422,11 @@ async function previewLocal(id: string, el: HTMLElement) {
 async function removeLocal(id: string) {
   const d = readLocalDocs().find((x) => x.id === id);
   if (!confirm(`Delete local copy of '${d?.filename ?? id}'?`)) return;
-  removeLocalDoc(id);
-  tombstoneDoc(id);
-  if (!isOnline()) {
-    try {
-      const { queueLocalOp } = await import("./lib/local/pipeline");
-      await queueLocalOp("delete", { kind: "delete", docId: id, filename: d?.filename ?? id, at: Date.now() });
-    } catch {
-      /* outbox unavailable — the delete still applies locally */
-    }
+  try {
+    const { deleteLocalDoc } = await import("./lib/local/pipeline");
+    await deleteLocalDoc(id, d?.filename ?? id);
+  } catch {
+    /* outbox unavailable — the registry/tombstone delete still applies locally */
   }
   void refreshOutbox();
   void loadDocs();

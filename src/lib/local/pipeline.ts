@@ -20,7 +20,7 @@ import {
 } from "@rag-client/agent/generate";
 import type { Hit, Retrieval } from "@rag-client/agent/retrieve";
 import type { DexieStore } from "@rag-client/agent/store";
-import { readTombstones, type LocalEngineKind } from "./policy";
+import { readTombstones, removeLocalDoc, tombstoneDoc, type LocalEngineKind, type StorageLike } from "./policy";
 
 /** App-side char-trigram hash embedder — algorithm-parity with the agent's
  * `HashEmbedder` (same tokenize/trigram/FNV/normalize, dim 384) so stored
@@ -278,6 +278,21 @@ export async function queueLocalOp(
 ): Promise<number> {
   const s: OutboxStore = store ?? await getStore();
   return s.enqueue(op, payload);
+}
+
+/** Local delete mutation: registry removal + tombstone + UNCONDITIONAL
+ * outbox enqueue. Queued even when online — flush is local-only anyway,
+ * and the entry preserves Stage-3 sync intent. */
+export async function deleteLocalDoc(
+  id: string,
+  filename: string,
+  store?: OutboxStore,
+  storage?: StorageLike | null,
+): Promise<void> {
+  removeLocalDoc(id, storage);
+  tombstoneDoc(id, storage);
+  const s: OutboxStore = store ?? await getStore();
+  await s.enqueue("delete", { kind: "delete", docId: id, filename, at: Date.now() });
 }
 
 export async function pendingOps(store?: OutboxStore): Promise<number> {

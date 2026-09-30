@@ -5,13 +5,33 @@ import type { Chunk } from "@rag-client/agent/chunk";
 import type { Hit, Retrieval } from "@rag-client/agent/retrieve";
 import { DexieStore } from "@rag-client/agent/store";
 import {
+  addLocalDoc,
+  readLocalDocs,
+  readTombstones,
+  type LocalDocMeta,
+  type StorageLike,
+} from "../src/lib/local/policy";
+import {
   answerLocal,
+  deleteLocalDoc,
   flushOutbox,
+  getStore,
+  ingestLocalFile,
+  LocalHashEmbedder,
   queueLocalOp,
   pendingOps,
   retrieveLocal,
   type EngineLike,
 } from "../src/lib/local/pipeline";
+
+const memStorage = (): StorageLike => {
+  const m = new Map<string, string>();
+  return {
+    getItem: (k) => (m.has(k) ? m.get(k)! : null),
+    setItem: (k, v) => void m.set(k, v),
+    removeItem: (k) => void m.delete(k),
+  };
+};
 
 const C = (id: string, docId: string, text: string): Chunk => ({
   id,
@@ -155,6 +175,79 @@ describe("outbox queue/flush (offline mutations, local flush — no server sync)
     expect(flushed).toBe(2);
     expect(await pendingOps(store)).toBe(0);
     expect(await flushOutbox(store)).toBe(0);
+    store.close();
+  });
+});
+
+describe("ingestLocalFile end-to-end (.txt Blob → Dexie, real parse/chunk path)", () => {
+  it("parses, chunks, embeds, and stores retrievable vectors; outbox gets a put entry", async () => {
+    const store = await getStore();
+    await store.clear();
+    try {
+      const text = "Employees may carry over up to 5 unused leave days. ".repeat(30);
+      const r = await ingestLocalFile(new Blob([text], { type: "text/plain" }), "leave-policy.txt");
+
+      expect(r.filename).toBe("leave-policy.txt");
+      expect(r.docId.startsWith("local-")).toBe(true);
+      expect(r.pages).toBe(1);
+      expect(r.chunks).toBeGreaterThan(0);
+      expect(r.note.length).toBeGreaterThan(0);
+
+      // Vectors stored and retrievable: searchDense returns this doc's chunks.
+      const emb = new LocalHashEmbedder(384);
+      const [qvec] = await emb.embed(["carry over unused leave days"]);
+      const dense = await store.searchDense(qvec as number[], 5);
+      expect(dense.length).toBeGreaterThan(0);
+      const all = await store.allChunks();
+      for (const d of dense) {
+        expect(all.find((c) => c.id === d.id)?.docId).toBe(r.docId);
+      }
+
+      // The upload glue step queues a "put" entry in the outbox.
+      await queueLocalOp(
+        "put",
+        { kind: "upload", docId: r.docId, filename: r.filename, at: Date.now() },
+      );
+      expect(await pendingOps()).toBe(1);
+      expect(await flushOutbox()).toBe(1);
+      expect(await pendingOps()).toBe(0);
+    } finally {
+      await store.clear();
+    }
+  });
+});
+
+describe("deleteLocalDoc queues unconditionally (online or offline)", () => {
+  it("an online delete still leaves a delete entry in the outbox", async () => {
+    const store = new DexieStore(dbName());
+    const storage = memStorage();
+    const meta: LocalDocMeta = {
+      id: "d1",
+      filename: "d1.txt",
+      size: 10,
+      pages: 1,
+      chunks: 1,
+      origin: "local",
+      embedNote: "hash",
+      addedAt: 1,
+    };
+    addLocalDoc(meta, storage);
+    expect(readLocalDocs(storage).map((d) => d.id)).toEqual(["d1"]);
+
+    // No online/offline gate exists at this layer by design: flush is
+    // local-only anyway, and the entry preserves Stage-3 sync intent.
+    await deleteLocalDoc("d1", "d1.txt", store, storage);
+
+    expect(readLocalDocs(storage)).toEqual([]);
+    expect(readTombstones(storage)).toEqual(["d1"]);
+    expect(await store.pending()).toBe(1);
+    const seen: [string, unknown][] = [];
+    const flushed = await store.flush(async (op, payload) => {
+      seen.push([op, payload]);
+    });
+    expect(flushed).toBe(1);
+    expect(seen[0][0]).toBe("delete");
+    expect(seen[0][1]).toMatchObject({ kind: "delete", docId: "d1", filename: "d1.txt" });
     store.close();
   });
 });
