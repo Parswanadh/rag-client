@@ -24,6 +24,18 @@ export { indexCorpus, retrieve } from "./retrieve";
 export type { Hit, IndexedCorpus, Retrieval, RetrieveOptions } from "./retrieve";
 export { detectTier } from "./detect";
 export type { Tier, TierInfo } from "./detect";
+export {
+  buildGroundedPrompt,
+  composeExtractive,
+  DEFAULT_WEBLLM_MODEL,
+  ExtractiveEngine,
+  formatSources,
+  NanoEngine,
+  NO_ANSWER_TEXT,
+  selectGenerationTier,
+  WebLLMEngine,
+} from "./generate";
+export type { ExtractiveCitation, ExtractiveResult, WebLLMOptions } from "./generate";
 export type { EvalCase, Generation, Parser, Store, TierPolicy } from "./types";
 export { DocumentParser, parseDocument } from "./parse";
 export type { ParsedDocument, ParsedPage } from "./parse";
