@@ -5,6 +5,13 @@
   "description": "Reusable local-first RAG core: chunking, embeddings, BM25, RRF fusion, hybrid retrieval, tier detection, and shared contracts (Store, Parser, Generation, TierPolicy, EvalCase).",
   "exports": {
     ".": "./src/index.ts",
+    "./bm25": "./src/bm25.ts",
+    "./chunk": "./src/chunk.ts",
+    "./detect": "./src/detect.ts",
+    "./embed": "./src/embed.ts",
+    "./fuse": "./src/fuse.ts",
+    "./retrieve": "./src/retrieve.ts",
+    "./types": "./src/types.ts",
     "./package.json": "./package.json"
   },
   "types": "./src/index.ts",

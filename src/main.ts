@@ -1,4 +1,4 @@
-import { detectTier } from "@rag-client/agent";
+import { detectTier } from "@rag-client/agent/detect";
 import {
   deleteDoc,
   docFile,
