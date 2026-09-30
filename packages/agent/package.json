@@ -20,7 +20,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@huggingface/transformers": "^4.3.0"
+    "@huggingface/transformers": "^4.3.0",
+    "dexie": "^4.4.6",
+    "fake-indexeddb": "^6.2.5"
   },
   "devDependencies": {
     "typescript": "^5.9.2",
