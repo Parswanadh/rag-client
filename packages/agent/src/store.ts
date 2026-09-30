@@ -6,14 +6,12 @@
  *   queuedAt}` rows for later backend sync, with explicit
  *   `enqueue` / `flush(handler)` / `pending` helpers.
  *
- * NOTE: `src/types.ts` is frozen this task and its `Store.searchDense`
- * returns `{id, score}` while this task's Store contract returns
- * `{chunk, score}` with Promise-only methods. The exact task contract is
- * therefore declared additively here as `LocalStore` (no edit to types.ts);
- * `DexieStore implements LocalStore`.
+ * NOTE: `DexieStore implements Store` from `./types` (frozen contract:
+ * sync-or-async methods, `searchDense` returns `{id, score}[]`).
  */
 import Dexie, { type Table } from "dexie";
 import type { Chunk } from "./chunk";
+import type { Store } from "./types";
 
 /** Sync outbox operation kinds. */
 export type OutboxOp = "put" | "delete";
@@ -29,15 +27,6 @@ export interface OutboxEntry {
 /** Chunk row as persisted: Chunk fields + dense vector as Float32Array. */
 export interface ChunkRow extends Chunk {
   vector: Float32Array;
-}
-
-/** Exact task-2 Store contract (additive local type; types.ts frozen). */
-export interface LocalStore {
-  putChunks(chunks: Chunk[], vectors: Map<string, number[]>): Promise<void>;
-  searchDense(vec: number[], k: number): Promise<{ chunk: Chunk; score: number }[]>;
-  allChunks(): Promise<Chunk[]>;
-  clear(): Promise<void>;
-  size(): Promise<number>;
 }
 
 /** Handler invoked once per outbox row by `flush`, in queue order. */
@@ -58,7 +47,7 @@ function cosineStored(q: readonly number[], v: Float32Array): number {
   return dot;
 }
 
-export class DexieStore extends Dexie implements LocalStore {
+export class DexieStore extends Dexie implements Store {
   private chunks!: Table<ChunkRow, string>;
   private outbox!: Table<OutboxEntry, number>;
 
@@ -91,12 +80,12 @@ export class DexieStore extends Dexie implements LocalStore {
 
   /** Brute-force dense top-k by cosine; ties broken by chunk id ascending
    * for determinism. Dim-mismatched rows score 0 (never NaN). */
-  async searchDense(vec: number[], k: number): Promise<{ chunk: Chunk; score: number }[]> {
+  async searchDense(vec: number[], k: number): Promise<{ id: string; score: number }[]> {
     if (k <= 0) return [];
     const rows = await this.chunks.toArray();
     return rows
-      .map((r) => ({ chunk: stripVector(r), score: cosineStored(vec, r.vector) }))
-      .sort((a, b) => b.score - a.score || (a.chunk.id < b.chunk.id ? -1 : a.chunk.id > b.chunk.id ? 1 : 0))
+      .map((r) => ({ id: r.id, score: cosineStored(vec, r.vector) }))
+      .sort((a, b) => b.score - a.score || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
       .slice(0, k);
   }
 

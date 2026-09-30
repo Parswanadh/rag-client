@@ -26,4 +26,4 @@ export { detectTier } from "./detect";
 export type { Tier, TierInfo } from "./detect";
 export type { EvalCase, Generation, Parser, Store, TierPolicy } from "./types";
 export { DexieStore } from "./store";
-export type { ChunkRow, LocalStore, OutboxEntry, OutboxHandler, OutboxOp } from "./store";
+export type { ChunkRow, OutboxEntry, OutboxHandler, OutboxOp } from "./store";

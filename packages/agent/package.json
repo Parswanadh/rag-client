@@ -11,6 +11,7 @@
     "./embed": "./src/embed.ts",
     "./fuse": "./src/fuse.ts",
     "./retrieve": "./src/retrieve.ts",
+    "./store": "./src/store.ts",
     "./types": "./src/types.ts",
     "./package.json": "./package.json"
   },
@@ -21,10 +22,10 @@
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.0",
-    "dexie": "^4.4.6",
-    "fake-indexeddb": "^6.2.5"
+    "dexie": "^4.4.6"
   },
   "devDependencies": {
+    "fake-indexeddb": "^6.2.5",
     "typescript": "^5.9.2",
     "vitest": "^4.1.11"
   }

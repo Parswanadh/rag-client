@@ -2,6 +2,7 @@ import "fake-indexeddb/auto";
 import { describe, expect, it } from "vitest";
 import { DexieStore } from "../src/store";
 import type { Chunk } from "../src/chunk";
+import type { Store } from "../src/types";
 
 const C = (id: string, text: string): Chunk => ({
   id,
@@ -34,12 +35,14 @@ describe("DexieStore", () => {
 
     // New instance on the same DB name still has the rows.
     const s2 = new DexieStore(name);
-    expect(await s2.size()).toBe(3);
+    // DexieStore satisfies the frozen Store contract (usable as Store).
+    const asStore: Store = s2;
+    expect(await asStore.size()).toBe(3);
     const all = await s2.allChunks();
     expect(all.map((c) => c.id).sort()).toEqual(["a", "b", "c"]);
     const hits = await s2.searchDense(unitVec(4, 0), 2);
     expect(hits).toHaveLength(2);
-    expect(hits[0].chunk.id).toBe("a");
+    expect(hits[0].id).toBe("a");
     expect(hits[0].score).toBeCloseTo(1, 9);
     expect(hits[0].score).toBeGreaterThanOrEqual(hits[1].score);
     s2.close();
