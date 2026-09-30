@@ -10,6 +10,7 @@
     "./detect": "./src/detect.ts",
     "./embed": "./src/embed.ts",
     "./fuse": "./src/fuse.ts",
+    "./parse": "./src/parse.ts",
     "./retrieve": "./src/retrieve.ts",
     "./store": "./src/store.ts",
     "./types": "./src/types.ts",
@@ -22,7 +23,11 @@
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.0",
-    "dexie": "^4.4.6"
+    "dexie": "^4.4.6",
+    "jszip": "^3.10.2",
+    "mammoth": "^1.13.0",
+    "pdfjs-dist": "^6.3.289",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.2.5",

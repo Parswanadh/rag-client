@@ -25,5 +25,7 @@ export type { Hit, IndexedCorpus, Retrieval, RetrieveOptions } from "./retrieve"
 export { detectTier } from "./detect";
 export type { Tier, TierInfo } from "./detect";
 export type { EvalCase, Generation, Parser, Store, TierPolicy } from "./types";
+export { DocumentParser, parseDocument } from "./parse";
+export type { ParsedDocument, ParsedPage } from "./parse";
 export { DexieStore } from "./store";
 export type { ChunkRow, OutboxEntry, OutboxHandler, OutboxOp } from "./store";
