@@ -1,0 +1,22 @@
+{
+  "name": "@rag-client/agent",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Reusable local-first RAG core: chunking, embeddings, BM25, RRF fusion, hybrid retrieval, tier detection, and shared contracts (Store, Parser, Generation, TierPolicy, EvalCase).",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.11"
+  }
+}
